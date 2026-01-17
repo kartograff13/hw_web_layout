@@ -1,81 +1,48 @@
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from typing import Any, Tuple, Type
 
 
 class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        """Обработка GET-запросов с маршрутизацией"""
-        path = self.path.split('?')[0]
 
-        routes = {
-            '/': 'general.html',
-            '/general': 'general.html',
-            '/categories': 'categories.html',
-            '/orders': 'orders.html',
-            '/contacts': 'contacts.html'
-        }
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Инициализатор с явными аннотациями типов"""
+        super().__init__(*args, **kwargs)
 
-        filename = routes.get(path)
-
-        if not filename:
-            self.send_response(404)
-            self.send_header('Content-type', 'text/html; charset=utf-8')
-            self.end_headers()
-
-            error_html = """
-            <!DOCTYPE html>
-            <html>
-            <head><title>404 - Страница не найдена</title></head>
-            <body>
-                <h1>404 - Страница не найдена</h1>
-                <p>Доступные страницы:</p>
-                <ul>
-                    <li><a href="/">Главная</a></li>
-                    <li><a href="/categories">Категории</a></li>
-                    <li><a href="/orders">Заказы</a></li>
-                    <li><a href="/contacts">Контакты</a></li>
-                </ul>
-            </body>
-            </html>
-            """
-            self.wfile.write(error_html.encode('utf-8'))
-            return
-
+    def do_GET(self) -> None:
+        """Обработчик GET-запросов"""
         self.send_response(200)
-        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
 
         try:
-            current_dir = Path(__file__).parent
-            html_file_path = current_dir / 'templates' / filename
+            current_dir: Path = Path(__file__).parent
+            html_file_path: Path = current_dir / "templates" / "contacts.html"
 
-            with open(html_file_path, 'r', encoding='utf-8') as file:
-                html_content = file.read()
+            with open(html_file_path, "r", encoding="utf-8") as file:
+                html_content: str = file.read()
 
-            self.wfile.write(html_content.encode('utf-8'))
+            self.wfile.write(html_content.encode("utf-8"))
 
         except FileNotFoundError:
-            self.send_error(404, f"Файл {filename} не найден")
+            self.send_error(404, "Файл contacts.html не найден")
         except Exception as e:
             self.send_error(500, f"Ошибка сервера: {str(e)}")
 
-    def log_message(self, log_format, *args):
-        """Переопределение метода логирования для отключения стандартного вывода"""
+    def log_message(self, format_str: str, *args: Any) -> None:
+        """Переопределяем метод логирования для отключения стандартного вывода"""
         pass
 
 
-def run_server(port=8000):
-    """Запуск HTTP-сервера"""
-    server_address = ('', port)
-    httpd = HTTPServer(server_address, SimpleHandler)
+def run_server(port: int = 8000) -> None:
+    """Запускает HTTP сервер на указанном порту"""
+    server_address: Tuple[str, int] = ("", port)
+
+    handler_class: Type[BaseHTTPRequestHandler] = SimpleHandler
+    httpd: HTTPServer = HTTPServer(server_address, handler_class)
+
     print(f"Сервер запущен на http://localhost:{port}")
-    print("Доступные страницы:")
-    print("  http://localhost:8000/ - Главная")
-    print("  http://localhost:8000/general - Главная (альтернатива)")
-    print("  http://localhost:8000/categories - Категории")
-    print("  http://localhost:8000/orders - Заказы")
-    print("  http://localhost:8000/contacts - Контакты")
-    print("\nНажмите Ctrl+C для остановки сервера")
+    print("Нажмите Ctrl+C для остановки сервера")
 
     try:
         httpd.serve_forever()
@@ -84,5 +51,5 @@ def run_server(port=8000):
         httpd.server_close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_server()
